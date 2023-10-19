@@ -1,4 +1,12 @@
 <?php
+function processRequest() {
+    // Registre a solicitação no arquivo de log
+    $logFile = 'log.txt';
+    $logMessage = date('Y-m-d H:i:s') . " - Endpoint acessado: " . $_SERVER['REQUEST_URI'] . "\n";
+    file_put_contents($logFile, $logMessage, FILE_APPEND);
+
+   
+
 //----ponto de extremidade-----------------------
 
 function custom_endpoint_init() {
@@ -22,3 +30,4 @@ function custom_endpoint_template($template) {
 }
 add_filter('template_include', 'custom_endpoint_template');
 
+}
