@@ -21,14 +21,10 @@ add_action('rest_api_init', function () {
 function categoryBR1($request) {
     $news = $request->get_param('news');
     $country = $request->get_param('country');
-
+// Função para processar a solicitação
+function categoryBR1($news, $country) {
     // Registre a solicitação bem-sucedida
     log_activity('Solicitação bem-sucedida', $news, $country);
-
-    
-       
-
-      
 
     // Realize a lógica de pesquisa de notícias e obtenha classificações e links aqui
     // Esta lógica deve ser baseada em suas necessidades específicas
@@ -36,12 +32,13 @@ function categoryBR1($request) {
     $classification = 'Not found';
     $link = '';
 
-    // ... Sua lógica de pesquisa de notícias ...
+  // ... Sua lógica de pesquisa de notícias ...
   function searchInText($text, $searchString) {
-        $regex = '/' . preg_quote($searchString, '/') . '/i';
-        preg_match_all($regex, $text, $matches);
-        return count($matches[0]);
-    }
+    $regex = '/' . preg_quote($searchString, '/') . '/i';
+    preg_match_all($regex, $text, $matches);
+    return count($matches[0]);
+}
+
 
     $tagText = '';
     $encodedTitle = rawurlencode($news);
@@ -49,17 +46,16 @@ function categoryBR1($request) {
 
     $searchUrl = 'https://www.google.com/search?q=' . $encodedTitle . '+' . $site;
 
-    $response = wp_safe_remote_get($searchUrl);
+    $response = file_get_contents($searchUrl);
 
-    if (is_wp_error($response)) {
+    if ($response !== false) {
         // Lida com erros na solicitação HTTP, se houver
         return 'Erro ao buscar o URL ' . $searchUrl;
     }
 
-    $text = wp_remote_retrieve_body($response);
     $searchResults = [];
 
-    if (preg_match_all('/<div class="g">.*?<\/div>/s', $text, $searchResults)) {
+    if (preg_match_all('/<div class="g">.*?<\/div>/s', $response, $searchResults)) {
         $firstResult = $searchResults[0][0];
         preg_match('/<a href="([^"]+)"/', $firstResult, $linkMatches);
         $link = !empty($linkMatches[1]) ? $linkMatches[1] : '';
@@ -75,67 +71,54 @@ function categoryBR1($request) {
     // .....................................................................
 
     // Após a obtenção do link
-// Realizar uma nova solicitação HTTP para obter o HTML completo do artigo
-$articleResponse = wp_safe_remote_get($link);
+    // Realizar uma nova solicitação HTTP para obter o HTML completo do artigo
+    $articleResponse = file_get_contents($link);
 
-if (!is_wp_error($articleResponse)) {
-    $articleText = wp_remote_retrieve_body($articleResponse);
-    $articleDoc = new DOMDocument();
-    @$articleDoc->loadHTML($articleText);
+    if ($articleResponse !== false) {
+        $articleDoc = new DOMDocument();
+        @$articleDoc->loadHTML($articleResponse);
 
-    $answerTags = $articleDoc->getElementsByTagName('div');
-    
-    foreach ($answerTags as $tag) {
-        if ($tag->getAttribute('class') === 'answer__tag') {
-            $tagText = trim($tag->textContent);
-            if ($tagText === 'Comprova Explica') {
-                $classification = 'Comprova Explica';
-            } elseif ($tagText === 'Enganoso') {
-                $classification = 'FAKE';
-            } elseif ($tagText === 'Comprovado') {
-                $classification = 'FATO';
-            } elseif ($tagText === 'Falso') {
-                $classification = 'FAKE';
+        $answerTags = $articleDoc->getElementsByTagName('div');
+
+        foreach ($answerTags as $tag) {
+            if ($tag->getAttribute('class') === 'answer__tag') {
+                $tagText = trim($tag->textContent);
+                if ($tagText === 'Comprova Explica') {
+                    $classification = 'Comprova Explica';
+                } elseif ($tagText === 'Enganoso') {
+                    $classification = 'FAKE';
+                } elseif ($tagText === 'Comprovado') {
+                    $classification = 'FATO';
+                } elseif ($tagText === 'Falso') {
+                    $classification = 'FAKE';
+                }
             }
         }
+    } else {
+        // Lida com erros na solicitação HTTP do artigo, se houver
     }
-} else {
-    // Lida com erros na solicitação HTTP do artigo, se houver
-}
 
-
-
-
-   
-
-
-    $response = array(
+    // Após a obtenção do link e da classificação, crie uma matriz de resposta
+    $response = [
         'classification' => $classification,
-        'link' => $link
-    );
+        'link' => $link,
+    ];
 
-    return new WP_REST_Response($response, 200);
+    // Configure os cabeçalhos para indicar que a resposta é JSON
+    header('Content-Type: application/json');
+
+    // Codifique a matriz de resposta como JSON e imprima na saída
+    echo json_encode($response);
 }
 
 function log_activity($message, $news, $country) {
-    // Registre a atividade no banco de dados, por exemplo, em uma tabela de registro de atividades
-    global $wpdb;
-    
-    $table_name = $wpdb->prefix . 'activity_log';
-
-    $data = array(
-        'message' => $message,
-        'news' => $news,
-        'country' => $country,
-        'timestamp' => current_time('mysql'),
-    );
-
-    $wpdb->insert($table_name, $data);
+    // Registre a atividade no banco de dados ou em um arquivo de log
+    // Implemente a lógica de registro de atividade adequada aqui
 }
-add_action('rest_api_init', function () {
-    register_rest_route('myplugin/v1', '/article-info', array(
 
-        'methods' => 'GET',
-        'callback' => 'getArticleInfo',
-        ));
-        });
+// Obter parâmetros da solicitação
+$news = isset($_GET['news']) ? $_GET['news'] : '';
+$country = isset($_GET['country']) ? $_GET['country'] : '';
+
+// Chame a função para processar a solicitação
+categoryBR1($news, $country);
