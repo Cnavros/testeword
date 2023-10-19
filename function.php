@@ -1,32 +1,4 @@
-function check_bot_and_add_description() {
-    $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? strtolower( $_SERVER['HTTP_USER_AGENT'] ) : '';
-
-    // Verifica se o agente do usuário é um bot (robo.txt) e adiciona a meta descrição.
-    if ( strpos( $user_agent, 'bot' ) !== false ) {
-        add_action( 'wp_head', 'add_description_meta_tag' );
-    }
-}
-
-function add_description_meta_tag() {
-    echo '<meta name="description" content="Check and fight fake news with the trusted fact-checking tool. Join our community in the fight against misinformation and get access to accurate and authentic information">';
-}
-
-add_action('wp_head', 'custom_site_description');
-
-//------Mega-menu---------------------------
-
-
-//---Limpar Cache--------------
-
-// Limpar o cache do WordPress
-function clear_wp_cache() {
-    if (function_exists('wp_cache_clear_cache')) {
-        wp_cache_clear_cache();
-    }
-}
-add_action('admin_init', 'clear_wp_cache');
-
-
+<?php
 //----ponto de extremidade-----------------------
 
 function custom_endpoint_init() {
@@ -49,8 +21,4 @@ function custom_endpoint_template($template) {
     return $template;
 }
 add_filter('template_include', 'custom_endpoint_template');
-
-
-
-
 
