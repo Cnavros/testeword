@@ -122,3 +122,10 @@ $country = isset($_GET['country']) ? $_GET['country'] : '';
 
 // Chame a função para processar a solicitação
 categoryBR1($news, $country);
+<script>
+  // Envie um evento personalizado para rastrear as solicitações do aplicativo
+  gtag('event', 'SolicitacaoApp', {
+    'event_category': 'AppInteractions',
+    'event_label': 'NomeDaSolicitacao' // Substitua pelo nome da sua solicitação
+  });
+</script>
